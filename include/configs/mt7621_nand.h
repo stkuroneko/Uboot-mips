@@ -106,8 +106,8 @@
 #if defined(CONFIG_AX18T)
 #define WPS_BTN                 4
 #define RST_BTN                 18
-#define PWR_LED                 16
-#define WAN_LED                 15
+#define PWR_LED                 7
+#define WAN_LED                 8
 #endif 
 
 #if defined(CONFIG_Q20)
