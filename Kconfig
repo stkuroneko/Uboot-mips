@@ -557,6 +557,12 @@ config R3P
 	help
 	  Enable R3P.
 
+config RX6000
+	bool "Enable RX6000"
+	default n
+	help
+	  Enable RX6000.
+
 config RTAX54
 	bool "Enable RTAX54"
 	default n

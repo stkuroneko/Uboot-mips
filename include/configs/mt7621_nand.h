@@ -158,6 +158,14 @@
 #define LAN_LED                 6
 #endif
 
+#if defined(CONFIG_RX6000)
+#define WPS_BTN                 18
+#define RST_BTN                 16
+#define PWR_LED                 17
+#define WIFI_2G_LED             15
+#define WIFI_5G_LED             13
+#endif 
+
 #ifdef CONFIG_4GAX56
 #define WPS_BTN                 4
 #define RST_BTN                 8

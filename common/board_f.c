@@ -76,6 +76,8 @@ const char *model =
 	"NETGEAR-BZV";
 #elif defined(CONFIG_R3P)
 	"XIAOMI-R3P";
+#elif defined(CONFIG_RX6000)
+	"ZTT-RX6000";
 #elif defined(CONFIG_4GAX56)
 	"4G-AX56";
 #elif defined(CONFIG_RTAX54)
@@ -109,6 +111,8 @@ const char *blver =
 	"1000";
 #elif defined(CONFIG_R3P)
 	"1000";
+#elif defined(CONFIG_RX6000)
+	"1001";
 #elif defined(CONFIG_4GAX56)
 	"1003";
 #elif defined(CONFIG_RTAX54)
