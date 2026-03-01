@@ -563,6 +563,12 @@ config RX6000
 	help
 	  Enable RX6000.
 
+config GAX1800
+	bool "Enable GAX1800"
+	default n
+	help
+	  Enable GAX1800.
+
 config RTAX54
 	bool "Enable RTAX54"
 	default n

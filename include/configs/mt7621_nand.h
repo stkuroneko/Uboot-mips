@@ -166,6 +166,12 @@
 #define WIFI_5G_LED             13
 #endif 
 
+#if defined(CONFIG_GAX1800)
+#define WPS_BTN                 6
+#define RST_BTN                 18
+#define PWR_LED                 8
+#endif 
+
 #ifdef CONFIG_4GAX56
 #define WPS_BTN                 4
 #define RST_BTN                 8
