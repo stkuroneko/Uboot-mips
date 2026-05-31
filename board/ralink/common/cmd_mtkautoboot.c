@@ -27,9 +27,12 @@ struct mtk_bootmenu_entry {
 	}, {
 		.desc = "Upgrade bootloader (advanced mode)",
 		.cmd = "mtkupgrade bladv"
-	},{
+	}, {
 		.desc = "Load image",
 		.cmd = "mtkload"
+	}, {
+		.desc = "Web failsafe UI",
+		.cmd = "httpd"
 	}
 };
 

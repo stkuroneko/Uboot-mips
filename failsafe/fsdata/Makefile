@@ -13,9 +13,33 @@ obj-y += upload.o
 FILE_upload.o := upload.html
 FSPATH_upload.o := upload.html
 
+obj-y += upload_bl.o
+FILE_upload_bl.o := upload_bl.html
+FSPATH_upload_bl.o := upload_bl.html
+
+obj-y += upload_factory.o
+FILE_upload_factory.o := upload_factory.html
+FSPATH_upload_factory.o := upload_factory.html
+
 obj-y += flashing.o
 FILE_flashing.o := flashing.html
 FSPATH_flashing.o := flashing.html
+
+obj-y += flashing_bl.o
+FILE_flashing_bl.o := flashing_bl.html
+FSPATH_flashing_bl.o := flashing_bl.html
+
+obj-y += flashing_factory.o
+FILE_flashing_factory.o := flashing_factory.html
+FSPATH_flashing_factory.o := flashing_factory.html
+
+obj-y += erase_nvram.o
+FILE_erase_nvram.o := erase_nvram.html
+FSPATH_erase_nvram.o := erase_nvram.html
+
+obj-y += flashing_nvram.o
+FILE_flashing_nvram.o := flashing_nvram.html
+FSPATH_flashing_nvram.o := flashing_nvram.html
 
 obj-y += success.o
 FILE_success.o := success.html

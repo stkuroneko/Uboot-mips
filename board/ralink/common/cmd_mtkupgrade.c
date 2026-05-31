@@ -729,6 +729,51 @@ int write_firmware_failsafe(size_t data_addr, uint32_t data_size)
 	return _write_firmware(flash, data_addr, data_size);
 }
 
+int write_bootloader_failsafe(size_t data_addr, uint32_t data_size)
+{
+	void *flash;
+
+	flash = mtk_board_get_flash_dev();
+
+	if (!flash)
+		return CMD_RET_FAILURE;
+
+	return write_bootloader(flash, data_addr, data_size);
+}
+
+int erase_nvram_failsafe(void)
+{
+	void *flash;
+	uint64_t addr, size;
+	char s[128];
+	int ret;
+
+	flash = mtk_board_get_flash_dev();
+
+	if (!flash)
+		return CMD_RET_FAILURE;
+
+	if (get_mtd_part_info("u-boot-env", &addr, &size)) {
+		printf("Cannot find u-boot-env partition\n");
+		return CMD_RET_FAILURE;
+	}
+
+	memset(s, 0, sizeof(s));
+	sprintf(s, "Erase 0x%08llx size 0x%llx\n", addr, size);
+	puts(s);
+
+	ret = mtk_board_flash_erase(flash, addr, size);
+
+	if (ret) {
+		printf("Fail\n");
+		return CMD_RET_FAILURE;
+	}
+
+	printf("OK\n");
+
+	return CMD_RET_SUCCESS;
+}
+
 static int write_firmware(void *flash, size_t data_addr, uint32_t data_size)
 {
 	return _write_firmware(flash, data_addr, data_size);
