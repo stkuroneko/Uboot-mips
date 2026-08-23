@@ -361,14 +361,7 @@ static void net_init_loop(void)
 
 static void net_clear_handlers(void)
 {
-#if defined(CONFIG_DHCP_SERVER)
-	extern int is_dhcp_server_running(void);
-	if (!is_dhcp_server_running()) {
-		net_set_udp_handler(NULL);
-	}
-#else
 	net_set_udp_handler(NULL);
-#endif
 	net_set_arp_handler(NULL);
 	net_set_timeout_handler(0, NULL);
 }

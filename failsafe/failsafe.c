@@ -10,6 +10,9 @@
 #include <malloc.h>
 #include <net/tcp.h>
 #include <net/httpd.h>
+#if defined(CONFIG_MTK_DHCPD)
+#include <net/mtk_dhcpd.h>
+#endif
 #include <u-boot/md5.h>
 #include <stdlib.h>
 
@@ -688,6 +691,42 @@ static void do_erase_all_handler(enum httpd_uri_handler_status s,
 int start_web_failsafe(void)
 {
 	struct httpd_instance *inst;
+#if defined(CONFIG_MTK_DHCPD)
+	int dhcp_ret;
+#endif
+
+	/*
+	 * Start DHCP server BEFORE httpd starts accepting connections, so that
+	 * directly-connected PCs can obtain a 192.168.1.x address without any
+	 * manual static-IP configuration.
+	 *
+	 * CRITICAL GUARANTEE AGAINST BRICKING:
+	 *   mtk_dhcpd_start() is ONLY ever reached from start_web_failsafe(),
+	 *   which is entered via the "httpd" U-Boot command / run_command() /
+	 *   user-triggered failsafe entry point. It is NEVER attached to an
+	 *   early-init hook such as board_init_f, last_stage_init, or
+	 *   board_early_init_r. This guarantees that eth_init(), net_init(),
+	 *   DDR/clock bring-up, and packet buffers (net_tx_packet/net_rx_packet)
+	 *   are all fully set up before we call net_set_udp_handler() / touch
+	 *   any network hardware.
+	 *   The previous boot-time brick was NOT caused by mtk_dhcpd.c itself,
+	 *   but by an "extern unsigned long DETECT(void) + run_command('httpd')"
+	 *   block that got mistakenly inserted into last_stage_init() in
+	 *   mt7621_nand_rfb.c. DETECT() did not exist, so the call jumped to
+	 *   an unmapped address and halted the CPU before even the U-Boot
+	 *   banner could print. The mt7621_nand_rfb.c file is LEFT UNTOUCHED in
+	 *   this re-enable.
+	 */
+#if defined(CONFIG_MTK_DHCPD)
+	dhcp_ret = mtk_dhcpd_start();
+	if (dhcp_ret)
+		printf("Warning: DHCP server failed to start (ret=%d). "
+		       "Configure PC static IP 192.168.1.x manually.\n",
+		       dhcp_ret);
+	else
+		printf("DHCP server started: pool 192.168.1.x, "
+		       "gateway/dns = 192.168.1.1, lease ~3600s\n");
+#endif
 
 	inst = httpd_find_instance(80);
 	if (inst)
@@ -721,6 +760,16 @@ int start_web_failsafe(void)
 	httpd_register_uri_handler(inst, "/style.css", &style_handler, NULL);
 	httpd_register_uri_handler(inst, "", &not_found_handler, NULL);
 
+	/*
+	 * A single net_loop(TCP) invocation drives BOTH the HTTP server on
+	 * TCP:80 AND the DHCP server on UDP:67/68 in parallel. The dispatch
+	 * switch on ip->ip_p inside net/net.c routes IPPROTO_TCP -> receive_tcp
+	 * (for HTTP) and IPPROTO_UDP -> *udp_packet_handler (into
+	 * dhcpd_udp_handler, which was installed by mtk_dhcpd_start() above).
+	 * DHCP OFFER/ACK packets are transmitted synchronously from the UDP
+	 * handler using net_set_udp_header() + net_send_packet(), independent
+	 * of the TCP state machine.
+	 */
 	net_loop(TCP);
 
 	return 0;
