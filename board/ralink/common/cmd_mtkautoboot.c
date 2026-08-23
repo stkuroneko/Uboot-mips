@@ -30,9 +30,6 @@ struct mtk_bootmenu_entry {
 	}, {
 		.desc = "Load image",
 		.cmd = "mtkload"
-	}, {
-		.desc = "Web failsafe UI",
-		.cmd = "httpd"
 	}
 };
 

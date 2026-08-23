@@ -56,11 +56,7 @@ static int do_mtkboardboot(cmd_tbl_t *cmdtp, int flag, int argc,
 		free((void *) ep);
 	}
 
-#ifndef CONFIG_WEBUI_FAILSAFE_ON_AUTOBOOT_FAIL
 	return CMD_RET_FAILURE;
-#else
-	return run_command("httpd", 0);
-#endif
 }
 
 U_BOOT_CMD(mtkboardboot, 1, 0, do_mtkboardboot,
