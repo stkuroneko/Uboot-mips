@@ -10,7 +10,6 @@
 #include <malloc.h>
 #include <net/tcp.h>
 #include <net/httpd.h>
-#include <net/mtk_dhcpd.h>
 #include <u-boot/md5.h>
 #include <stdlib.h>
 
@@ -689,17 +688,7 @@ static void do_erase_all_handler(enum httpd_uri_handler_status s,
 int start_web_failsafe(void)
 {
 	struct httpd_instance *inst;
-#if defined(CONFIG_MTK_DHCPD)
-	int dhcp_ret;
-#endif
-	
-#if defined(CONFIG_MTK_DHCPD)
-	dhcp_ret = mtk_dhcpd_start();
-	if (dhcp_ret) {
-		printf("Warning: Failed to start DHCP server\n");
-	}
-#endif
-	
+
 	inst = httpd_find_instance(80);
 	if (inst)
 		httpd_free_instance(inst);
@@ -731,13 +720,6 @@ int start_web_failsafe(void)
 	httpd_register_uri_handler(inst, "/do_erase_all", &do_erase_all_handler, NULL);
 	httpd_register_uri_handler(inst, "/style.css", &style_handler, NULL);
 	httpd_register_uri_handler(inst, "", &not_found_handler, NULL);
-
-#if defined(CONFIG_MTK_DHCPD)
-	dhcp_ret = mtk_dhcpd_start();
-	if (dhcp_ret) {
-		printf("Warning: Failed to restart DHCP server\n");
-	}
-#endif
 
 	net_loop(TCP);
 
