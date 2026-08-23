@@ -57,6 +57,14 @@ obj-y += style.o
 FILE_style.o := style.css
 FSPATH_style.o := style.css
 
+obj-y += erase_select.o
+FILE_erase_select.o := erase_select.html
+FSPATH_erase_select.o := erase_select.html
+
+obj-y += flashing_erase.o
+FILE_flashing_erase.o := flashing_erase.html
+FSPATH_flashing_erase.o := flashing_erase.html
+
 # customized build rules
 strip_path = $(subst /,_,$(subst -,_,$(subst .,_,$(1))))
 

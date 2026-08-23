@@ -69,13 +69,13 @@ const char *model =
 #elif defined(CONFIG_C3N)
 	"XY-C3NAND";
 #elif defined(CONFIG_RM2100)
-	"REDMI-AC2100";
+	"RM-AC2100";
 #elif defined(CONFIG_CR660X)
-	"XIAOMI-CR660X";
+	"XM-CR660X";
 #elif defined(CONFIG_BZV)
 	"NETGEAR-BZV";
 #elif defined(CONFIG_R3P)
-	"XIAOMI-R3P";
+	"XM-R3G/P";
 #elif defined(CONFIG_RX6000)
 	"ZTT-RX6000";
 #elif defined(CONFIG_GAX1800)

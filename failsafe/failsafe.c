@@ -10,6 +10,7 @@
 #include <malloc.h>
 #include <net/tcp.h>
 #include <net/httpd.h>
+#include <net/mtk_dhcpd.h>
 #include <u-boot/md5.h>
 #include <stdlib.h>
 
@@ -24,6 +25,9 @@ static int upload_type;
 extern int write_firmware_failsafe(size_t data_addr, uint32_t data_size);
 extern int write_bootloader_failsafe(size_t data_addr, uint32_t data_size);
 extern int erase_nvram_failsafe(void);
+extern int erase_factory_failsafe(void);
+extern int erase_factory2_failsafe(void);
+extern int erase_nvram_failsafe_ex(void);
 
 static int output_plain_file(struct httpd_response *response,
 	const char *filename)
@@ -77,16 +81,19 @@ static void upload_handler(enum httpd_uri_handler_status status,
 
 		if (!fw) {
 			struct httpd_form_value *type_val = httpd_request_find_value(request, "upload_type");
-			if (type_val && simple_strtoul(type_val->data, NULL, 10) == 3) {
-				upload_type = 3;
-				if (output_plain_file(response, "flashing_nvram.html")) {
-					response->info.code = 500;
+			if (type_val) {
+				unsigned long tval = simple_strtoul(type_val->data, NULL, 10);
+				if (tval == 3) {
+					upload_type = 3;
+					if (output_plain_file(response, "flashing_nvram.html")) {
+						response->info.code = 500;
+						return;
+					}
+					upload_data_id = upload_id;
+					upload_data = NULL;
+					upload_size = 0;
 					return;
 				}
-				upload_data_id = upload_id;
-				upload_data = NULL;
-				upload_size = 0;
-				return;
 			}
 			response->info.code = 302;
 			response->info.connection_close = 1;
@@ -384,8 +391,8 @@ static void result_handler(enum httpd_uri_handler_status status,
 				st->ret = write_bootloader_failsafe((size_t) upload_data,
 					upload_size);
 			} else if (upload_type == 2) {
-				printf("Factory upgrade via web UI is not supported\n");
-				st->ret = -1;
+				st->ret = write_factory_failsafe((size_t) upload_data,
+					upload_size);
 			} else if (upload_type == 3) {
 				st->ret = erase_nvram_failsafe();
 			}
@@ -444,6 +451,14 @@ static void erase_nvram_html_handler(enum httpd_uri_handler_status status,
 {
 	if (status == HTTP_CB_NEW)
 		output_plain_file(response, "erase_nvram.html");
+}
+
+static void erase_select_html_handler(enum httpd_uri_handler_status status,
+	struct httpd_request *request,
+	struct httpd_response *response)
+{
+	if (status == HTTP_CB_NEW)
+		output_plain_file(response, "erase_select.html");
 }
 
 static void not_found_handler(enum httpd_uri_handler_status status,
@@ -534,10 +549,157 @@ static void erase_nvram_handler(enum httpd_uri_handler_status status,
 	}
 }
 
+/*
+ * Generic erase partition handler.
+ * IMPORTANT: perform the blocking erase in HTTP_CB_NEW (before sending response
+ * header) so that we never race with HTTP_CB_CLOSED freeing the session_data.
+ * This mirrors the working erase_nvram_handler() timing pattern.
+ */
+static void do_erase_partition_handler(enum httpd_uri_handler_status status,
+	struct httpd_request *request,
+	struct httpd_response *response,
+	int(*erase_fn)(void),
+	const char *name)
+{
+	struct flashing_status *st;
+	u32 size;
+
+	if (status == HTTP_CB_NEW) {
+		st = calloc(1, sizeof(*st));
+		if (!st) {
+			response->info.code = 500;
+			return;
+		}
+
+		printf("Web erase: erasing %s partition...\n", name);
+		st->ret = erase_fn();
+		printf("Web erase: %s %s (ret=%d)\n", name,
+		       st->ret ? "FAILED" : "succeeded", st->ret);
+
+		response->session_data = st;
+
+		response->status = HTTP_RESP_CUSTOM;
+
+		response->info.http_1_0 = 1;
+		response->info.content_length = -1;
+		response->info.connection_close = 1;
+		response->info.content_type = "text/html";
+		response->info.code = 200;
+
+		size = http_make_response_header(&response->info,
+			st->buf, sizeof(st->buf));
+
+		response->data = st->buf;
+		response->size = size;
+
+		return;
+	}
+
+	if (status == HTTP_CB_RESPONDING) {
+		st = response->session_data;
+
+		if (st->body_sent) {
+			response->status = HTTP_RESP_NONE;
+			return;
+		}
+
+		/*
+		 * Build the response body directly inside st->buf.
+		 * This buffer has 4096 bytes and is allocated with calloc(),
+		 * so it stays valid until HTTP_CB_CLOSED frees it.
+		 * DO NOT use stack-local char arrays here: the response callback
+		 * reads response->data after this function returns, by which time
+		 * stack frames have been reclaimed and the pointer is dangling.
+		 */
+		if (!st->ret) {
+			snprintf(st->buf, sizeof(st->buf),
+				"<html><head>"
+				"<meta http-equiv=\"refresh\" content=\"3;url=/erase_select.html\">"
+				"</head><body>"
+				"<p style=\"color:#060;\"><strong>%s erase completed!</strong></p>"
+				"<p><a href=\"/erase_select.html\">Back to erase menu</a> | "
+				"<a href=\"/\">Back to main menu</a></p>"
+				"<p><a href=\"/reboot\"><strong>Reboot device</strong></a> "
+				"(auto redirect in 3 seconds)</p>"
+				"</body></html>",
+				name);
+		} else {
+			snprintf(st->buf, sizeof(st->buf),
+				"<html><body>"
+				"<p style=\"color:#c00;\"><strong>%s erase failed! (ret=%d)</strong></p>"
+				"<p>Please check the serial console log for details.</p>"
+				"<p><a href=\"/erase_select.html\">Back to erase menu</a> | "
+				"<a href=\"/\">Back to main menu</a></p>"
+				"</body></html>",
+				name, st->ret);
+		}
+
+		response->data = st->buf;
+		response->size = strlen(st->buf);
+		st->body_sent = 1;
+
+		return;
+	}
+
+	if (status == HTTP_CB_CLOSED) {
+		free(response->session_data);
+	}
+}
+
+/* Wrapper for "erase all three" — calls each erase function sequentially */
+static int erase_all_partitions_failsafe(void)
+{
+	int r, ret = 0;
+
+	r = erase_nvram_failsafe_ex();
+	if (r) ret = r;
+	r = erase_factory_failsafe();
+	if (r) ret = r;
+	r = erase_factory2_failsafe();
+	if (r) ret = r;
+
+	return ret;
+}
+
+static void do_erase_nvram_handler(enum httpd_uri_handler_status s,
+	struct httpd_request *req, struct httpd_response *rsp)
+{
+	do_erase_partition_handler(s, req, rsp, erase_nvram_failsafe_ex, "NVRAM");
+}
+
+static void do_erase_factory_handler(enum httpd_uri_handler_status s,
+	struct httpd_request *req, struct httpd_response *rsp)
+{
+	do_erase_partition_handler(s, req, rsp, erase_factory_failsafe, "Factory");
+}
+
+static void do_erase_factory2_handler(enum httpd_uri_handler_status s,
+	struct httpd_request *req, struct httpd_response *rsp)
+{
+	do_erase_partition_handler(s, req, rsp, erase_factory2_failsafe, "Factory2");
+}
+
+static void do_erase_all_handler(enum httpd_uri_handler_status s,
+	struct httpd_request *req, struct httpd_response *rsp)
+{
+	do_erase_partition_handler(s, req, rsp, erase_all_partitions_failsafe,
+				   "NVRAM+Factory+Factory2 (All)");
+}
+
 int start_web_failsafe(void)
 {
 	struct httpd_instance *inst;
-
+#if defined(CONFIG_MTK_DHCPD)
+	int dhcp_ret;
+#endif
+	
+#if defined(CONFIG_MTK_DHCPD)
+	dhcp_ret = mtk_dhcpd_start();
+	if (dhcp_ret) {
+		printf("Warning: Failed to start DHCP server\n");
+	}
+#endif
+	
 	inst = httpd_find_instance(80);
 	if (inst)
 		httpd_free_instance(inst);
@@ -560,8 +722,22 @@ int start_web_failsafe(void)
 	httpd_register_uri_handler(inst, "/reboot", &reboot_handler, NULL);
 	httpd_register_uri_handler(inst, "/erase_nvram", &erase_nvram_handler, NULL);
 	httpd_register_uri_handler(inst, "/erase_nvram.html", &erase_nvram_html_handler, NULL);
+	httpd_register_uri_handler(inst, "/erase_select", &erase_select_html_handler, NULL);
+	httpd_register_uri_handler(inst, "/erase_select.html", &erase_select_html_handler, NULL);
+	/* Independent erase handlers (blocking erase in HTTP_CB_NEW, safe) */
+	httpd_register_uri_handler(inst, "/do_erase_nvram", &do_erase_nvram_handler, NULL);
+	httpd_register_uri_handler(inst, "/do_erase_factory", &do_erase_factory_handler, NULL);
+	httpd_register_uri_handler(inst, "/do_erase_factory2", &do_erase_factory2_handler, NULL);
+	httpd_register_uri_handler(inst, "/do_erase_all", &do_erase_all_handler, NULL);
 	httpd_register_uri_handler(inst, "/style.css", &style_handler, NULL);
 	httpd_register_uri_handler(inst, "", &not_found_handler, NULL);
+
+#if defined(CONFIG_MTK_DHCPD)
+	dhcp_ret = mtk_dhcpd_start();
+	if (dhcp_ret) {
+		printf("Warning: Failed to restart DHCP server\n");
+	}
+#endif
 
 	net_loop(TCP);
 
