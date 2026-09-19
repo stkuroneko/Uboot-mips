@@ -569,6 +569,12 @@ config GAX1800
 	help
 	  Enable GAX1800.
 
+config HIWIFI4
+	bool "Enable HiWiFi 4 (HC5962)"
+	default n
+	help
+	  Enable HiWiFi 4 / HC5962 / B70 board support.
+
 config RTAX54
 	bool "Enable RTAX54"
 	default n

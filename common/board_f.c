@@ -80,6 +80,8 @@ const char *model =
 	"ZTT-RX6000";
 #elif defined(CONFIG_GAX1800)
 	"G-AX1800";
+#elif defined(CONFIG_HIWIFI4)
+	"HiWiFi 4 (HC5962)";
 #elif defined(CONFIG_4GAX56)
 	"4G-AX56";
 #elif defined(CONFIG_RTAX54)
@@ -117,6 +119,8 @@ const char *blver =
 	"1002";
 #elif defined(CONFIG_GAX1800)
 	"1001";
+#elif defined(CONFIG_HIWIFI4)
+	"1000";
 #elif defined(CONFIG_4GAX56)
 	"1003";
 #elif defined(CONFIG_RTAX54)

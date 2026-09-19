@@ -172,6 +172,11 @@
 #define PWR_LED                 8
 #endif 
 
+#if defined(CONFIG_HIWIFI4)
+#define RST_BTN                 18
+#define PWR_LED                 6
+#endif
+
 #ifdef CONFIG_4GAX56
 #define WPS_BTN                 4
 #define RST_BTN                 8

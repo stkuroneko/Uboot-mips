@@ -15,6 +15,7 @@
 | RM2100 | Xiaomi Redmi Router AC2100 | MT7621，双核 880 MHz | 128 MB（常见公开资料） | 128 MB ESMT NAND | 1×WAN + 3×LAN，千兆 | 2.4/5 GHz 802.11ac，4×4 规格（区域资料有差异） | NAND + NMBM；仓库配置为 MT7621 NAND |
 | 小娱 C3 NAND 版 | 小娱 C3（NAND 版） | MT7621（仓库平台，待实机确认） | 待确认 | NAND，容量待确认 | 千兆端口布局待确认 | 双频无线，芯片待确认 | 仓库提交明确区分 NAND 版 |
 | CMCC A9 | 中国移动 A9 | MT7621（仓库平台，待实机确认） | 待确认 | 待确认 | 待确认 | 双频无线，芯片待确认 | MT7621 NAND U-Boot |
+| HiWiFi 4 | 极路由 4 增强版 / HC5962 / B70 | MT7621AT，双核 880 MHz | 256 MB DDR3 | 128 MB NAND | 4×千兆 | MT7603EN + MT7612EN，N300 + AC867 | NAND U-Boot；OpenWrt 官方支持 |
 | ASUS RT-AX53U | ASUS RT-AX53U / RT-AX1800U | MT7621AT，双核 880 MHz | 256 MB | 128 MB NAND | 4×千兆 | MT7975 + MT7905，2.4/5 GHz Wi‑Fi 6 | U-Boot，支持 TFTP 恢复 |
 | ASUS RT-AX54 | ASUS RT-AX54 / AX1800 系列 | MT7621AT，双核 880 MHz | 256 MB | 128 MB NAND | 1×WAN + 4×LAN（公开设备资料） | 双频 Wi‑Fi 6，具体射频因变体而异 | U-Boot，OpenWrt 有独立设备支持 |
 | ASUS ZenWiFi XD4S | ASUS XD4S | MT7621（仓库配置命名推断，待实机确认） | 待确认 | 待确认 | 千兆端口，具体数量待确认 | AX1800 Mesh，射频芯片待确认 | 仓库提供 `config_xd4s` |
@@ -94,6 +95,32 @@
 - https://openwrt.org/toh/asus/rt-ax54?s%5B%5D=op
 - https://firmware-selector.openwrt.org/?version=23.05.0&target=ramips%2Fmt7621&id=asus_rt-ax54
 
+### HiWiFi 4（极路由 4 增强版 / HC5962 / B70）
+
+- 型号关系：公开 OpenWrt 和社区资料将 HiWiFi 4、HC5962 与 B70 对应为同一设备系列；购买或刷写前仍应核对底部铭牌的 `HC5962`。
+- SoC：MediaTek MT7621AT，双核 MIPS 1004Kc，880 MHz。
+- 内存：256 MB DDR3；第三方 Bootloader 的 HC5962 专用构建也使用 256 MB DDR3 初始化参数。
+- 闪存：128 MB NAND，页大小 2048 B、擦除块 128 KiB。
+- 交换机：MT7621 内置 MT7530 千兆交换机；公开硬件数据库记录 4 个千兆网口，通常为 1×WAN + 3×LAN。
+- 2.4 GHz：MediaTek MT7603EN，2×2 802.11b/g/n，最高 300 Mbit/s。
+- 5 GHz：MediaTek MT7612EN，2×2 802.11a/n/ac，最高 867 Mbit/s。
+- USB：1×USB 2.0、1×USB 3.0。
+- 人机接口：公开硬件数据库记录 2 个 LED、1 个按键；HC5962 专用 Breed 资料将复位键标为 GPIO 18。
+- 串口：具备串口；HC5962 专用 Breed 使用 115200 波特率。电平和引脚顺序应在连接前用万用表确认，不要直接接入 RS-232 电平。
+- Bootloader：原机使用 U-Boot；OpenWrt 自 18.06 起正式支持，目标为 `ramips/mt7621`，设备 ID 为 `hiwifi_hc5962`。
+- OpenWrt 旧版镜像定义：NAND block size 128 KiB、page size 2048 B、kernel 区 2 MiB，并生成独立的 factory、sysupgrade 和 initramfs 镜像。
+- 镜像兼容性：HC5961、HC5962 名称相近但硬件并不相同；本机必须使用 `hiwifi_hc5962` 镜像。第三方 Breed 也必须选择 `breed-mt7621-hiwifi-hc5962.bin`。
+- 校准数据：刷写或擦除前应完整备份 Factory/EEPROM、MAC 地址及原始 NAND；不要用其他 MT7621 设备的 Factory 分区替换。
+
+来源：
+
+- https://openwrt.org/toh/hwdata/hiwifi_gee/hiwifi_gee_hc5962
+- https://firmware-selector.openwrt.org/?id=hiwifi_hc5962&target=ramips%2Fmt7621&version=23.05.5
+- https://github.com/usnistgov/pscr-openwrt-fork/blob/master/target/linux/ramips/image/mt7621.mk
+- https://lists.infradead.org/pipermail/lede-commits/2025-June/025789.html
+- https://www.anywlan.com/xiazai_3352.html
+- https://github.com/wc7086/breed
+
 ## 公开资料不足的机型
 
 ### G-AX1800
@@ -121,7 +148,7 @@
 1. 多数目标共享 MT7621/MIPS32r2，但 **SoC 相同不等于镜像兼容**；GPIO、DDR 参数、NAND ID、分区布局和无线校准区都可能不同。
 2. 仓库的 failsafe 代码会提供 NVRAM、Factory、Factory2 擦除入口。Factory/Factory2 往往包含 MAC 地址、无线校准和地区参数，擦除前必须有备份。
 3. 对 NAND 机型，应优先记录 `nand info`、NMBM 状态和 MTD 分区；不要直接套用 NOR 机型的偏移地址。
-4. 对资料不足的四个型号，建议把实机采集结果补充到本文：串口日志、`bdinfo`、NAND ID、DDR 容量、以太网 PHY 地址、PCIe 无线设备 ID 和完整分区表。
+4. 对资料不足的机型，建议把实机采集结果补充到本文：串口日志、`bdinfo`、NAND ID、DDR 容量、以太网 PHY 地址、PCIe 无线设备 ID 和完整分区表。
 
 ## 仓库依据
 
@@ -132,3 +159,5 @@
 - `config_xd4s`
 - `config_4gax56`
 - Git 提交：`添加G-AX1800`、`添加ZTT RX6000`、`添加小米R3P`、`添加网件R6800`、`添加RM2100`、`添加小娱C3nand版`、`添加CMCCA9`
+
+HiWiFi 4 已加入 `CONFIG_HIWIFI4` 和 `config_hiwifi4` 构建配置。该适配按项目约定使用统一的 NMBM 分区布局和 failsafe 文件类型，不兼容 HC5962 原厂分区表；首次写入前必须完整备份原厂 NAND、Factory 与 bdinfo。
