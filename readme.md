@@ -91,7 +91,7 @@ make CROSS_COMPILE=/path/to/toolchain/bin/mipsel-linux- -j8
 
 ## 网页救援
 
-`config_e8820s`、`config_a040wq` 和 `config_hiwifi4` 已启用网页救援，其他配置可通过 `make menuconfig` 启用 `WEBUI_FAILSAFE`。
+上表 9 份机型配置均已启用 `WEBUI_FAILSAFE`、HTTP 服务和救援 DHCP 服务。按住复位键上电可进入网页救援；也可在串口 U-Boot 命令行执行 `httpd`。
 
 1. 电脑通过网线连接路由器 LAN 口，并设置为 `192.168.1.x/24` 网段内的可用地址，例如 `192.168.1.2`。
 2. 按住复位键上电，进入网页救援；也可在串口 U-Boot 命令行执行 `httpd`。
