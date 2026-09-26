@@ -44,7 +44,12 @@ jobs:
           mkdir -p "$RUNNER_TEMP/mt7621-toolchain"
           tar -xJf toolchains/buildroot-mipsel-uclibc-gcc-6.4.0.tar.xz \
             -C "$RUNNER_TEMP/mt7621-toolchain"
+          export LD_LIBRARY_PATH="$RUNNER_TEMP/mt7621-toolchain/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
           "$RUNNER_TEMP/mt7621-toolchain/usr/bin/mipsel-linux-gcc" --version
+          printf 'int toolchain_probe;\n' | \
+            "$RUNNER_TEMP/mt7621-toolchain/usr/bin/mipsel-linux-gcc" \
+            -x c -c -o "$RUNNER_TEMP/toolchain-probe.o" -
 
       - name: Configure
         run: |
