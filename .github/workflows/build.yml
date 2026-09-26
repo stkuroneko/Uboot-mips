@@ -1,0 +1,67 @@
+name: Build MT7621 U-Boot
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.board }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        board:
+          - rtax53u
+          - rtax54
+          - xd4s
+          - 4gax56
+          - r3p
+          - rm2100
+          - hiwifi4
+          - e8820s
+          - a040wq
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential bison flex gcc-mipsel-linux-gnu \
+            binutils-mipsel-linux-gnu python2-dev swig xz-utils
+          python2 --version
+          mipsel-linux-gnu-gcc --version
+
+      - name: Configure
+        run: |
+          cp "config_${{ matrix.board }}" .config
+          make PYTHON=python2 CROSS_COMPILE=mipsel-linux-gnu- olddefconfig
+
+      - name: Build SPL and U-Boot
+        run: |
+          make PYTHON=python2 CROSS_COMPILE=mipsel-linux-gnu- -j2 spl/u-boot-spl
+          make PYTHON=python2 CROSS_COMPILE=mipsel-linux-gnu- -j2
+
+      - name: Stage image and configuration
+        run: |
+          test -s u-boot-mt7621.bin
+          mkdir -p "dist/${{ matrix.board }}"
+          cp u-boot-mt7621.bin "dist/${{ matrix.board }}/"
+          cp .config "dist/${{ matrix.board }}/config"
+          sha256sum "dist/${{ matrix.board }}/u-boot-mt7621.bin" > "dist/${{ matrix.board }}/SHA256SUMS"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: u-boot-mt7621-${{ matrix.board }}
+          path: dist/${{ matrix.board }}/
+          if-no-files-found: error
+          retention-days: 14
