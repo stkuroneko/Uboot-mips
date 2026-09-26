@@ -183,6 +183,12 @@
 #define PWR_LED                 16 /* Active low */
 #endif
 
+#if defined(CONFIG_A040WQ)
+#define WPS_BTN                 18
+#define RST_BTN                 15
+#define PWR_LED                 13 /* USB LED, active low; used for boot status */
+#endif
+
 #ifdef CONFIG_4GAX56
 #define WPS_BTN                 4
 #define RST_BTN                 8

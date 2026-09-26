@@ -16,6 +16,7 @@
 | `config_rm2100` | Redmi AC2100 / RM2100 |
 | `config_hiwifi4` | 极路由 4 增强版 / HC5962 / B70 |
 | `config_e8820s` | ZTE E8820S，使用 RT-AX53U 闪存布局 |
+| `config_a040wq` | Nokia A-040W-Q，使用项目 NMBM 闪存布局 |
 
 其他机型选项见根目录 `Kconfig`，硬件资料与适配说明见 [机型硬件配置汇总](docs/router-hardware-inventory.md)。
 
@@ -71,9 +72,18 @@ make CROSS_COMPILE=/path/to/toolchain/bin/mipsel-linux- -j8
 
 配套固件及 Factory 数据必须适配上述布局，不能将该镜像视为 E8820S 原厂分区的直接替代品。
 
+## A-040W-Q 适配约定
+
+- CPU：MT7621，DDR3 256 MB；NAND 容量为 128 MB。
+- 复位键：GPIO15，低电平触发；WPS：GPIO18，低电平触发。
+- 本机无可控电源灯；U-Boot 将 GPIO13 的低电平有效 USB 灯用作启动和救援状态灯。无线灯 GPIO4/GPIO3 不由 U-Boot 控制。
+- 闪存使用本项目统一 NMBM 分区和 `0x3e0000` 固件偏移，配置参数与 `config_e8820s` 相同。该布局与原厂分区不同，配套固件必须使用项目布局。
+
+硬件定义参考 OpenWrt 的 `raisecom,msg1500-x-00` 设备树；OpenWrt 将 Nokia A-040W-Q 列为该机型的同硬件名称。本配置尚未经过 A-040W-Q 实机验证。
+
 ## 网页救援
 
-`config_e8820s` 和 `config_hiwifi4` 已启用网页救援，其他配置可通过 `make menuconfig` 启用 `WEBUI_FAILSAFE`。
+`config_e8820s`、`config_a040wq` 和 `config_hiwifi4` 已启用网页救援，其他配置可通过 `make menuconfig` 启用 `WEBUI_FAILSAFE`。
 
 1. 电脑通过网线连接路由器 LAN 口，并设置为 `192.168.1.x/24` 网段内的可用地址，例如 `192.168.1.2`。
 2. 按住复位键上电，进入网页救援；也可在串口 U-Boot 命令行执行 `httpd`。

@@ -1,6 +1,6 @@
 # 仓库涉及机型硬件配置汇总
 
-> 更新时间：2026-09-25
+> 更新时间：2026-09-26
 >
 > 本文根据本仓库的提交记录、配置文件和公开资料整理。公开资料之间可能存在地区版、批次版差异；`待确认` 表示尚未找到足够可靠的公开来源，不能用于直接选择刷机镜像或修改 DDR/NAND 参数。
 
@@ -16,6 +16,7 @@
 | 小娱 C3 NAND 版 | 小娱 C3（NAND 版） | MT7621（仓库平台，待实机确认） | 待确认 | NAND，容量待确认 | 千兆端口布局待确认 | 双频无线，芯片待确认 | 仓库提交明确区分 NAND 版 |
 | CMCC A9 | 中国移动 A9 | MT7621（仓库平台，待实机确认） | 待确认 | 待确认 | 待确认 | 双频无线，芯片待确认 | MT7621 NAND U-Boot |
 | HiWiFi 4 | 极路由 4 增强版 / HC5962 / B70 | MT7621AT，双核 880 MHz | 256 MB DDR3 | 128 MB NAND | 4×千兆 | MT7603EN + MT7612EN，N300 + AC867 | NAND U-Boot；OpenWrt 官方支持 |
+| A-040W-Q | Nokia A-040W-Q / RAISECOM MSG1500 X.00 同硬件型号 | MT7621A，双核 880 MHz | 256 MB DDR3 | 128 MB NAND | 千兆以太网 | MT7615D 双频 802.11ac | NAND U-Boot；本仓库使用统一 NMBM 布局 |
 | ASUS RT-AX53U | ASUS RT-AX53U / RT-AX1800U | MT7621AT，双核 880 MHz | 256 MB | 128 MB NAND | 4×千兆 | MT7975 + MT7905，2.4/5 GHz Wi‑Fi 6 | U-Boot，支持 TFTP 恢复 |
 | ASUS RT-AX54 | ASUS RT-AX54 / AX1800 系列 | MT7621AT，双核 880 MHz | 256 MB | 128 MB NAND | 1×WAN + 4×LAN（公开设备资料） | 双频 Wi‑Fi 6，具体射频因变体而异 | U-Boot，OpenWrt 有独立设备支持 |
 | ASUS ZenWiFi XD4S | ASUS XD4S | MT7621（仓库配置命名推断，待实机确认） | 待确认 | 待确认 | 千兆端口，具体数量待确认 | AX1800 Mesh，射频芯片待确认 | 仓库提供 `config_xd4s` |
@@ -187,3 +188,12 @@ make -j8
 输出为 `u-boot-mt7621.bin`。首次干净构建显式生成 SPL，以满足本仓库镜像打包依赖。
 GPIO 参考：[LEDE E8820S 设备树](https://github.com/coolsnowwolf/lede/blob/master/target/linux/ramips/dts/mt7621_zte_e8820s.dts)，并与本地 ImmortalWrt、Padavan 的 E8820S 定义交叉核对。
 编译通过不代表硬件验证；DDR 初始化、按键、灯和网络救援仍需实机测试。
+
+
+## Nokia A-040W-Q
+
+OpenWrt 将 A-040W-Q 列为 RAISECOM MSG1500 X.00 的同硬件型号。设备树定义了 GPIO15 低电平复位键、GPIO18 低电平 WPS 键、GPIO13 低电平 USB 灯，以及 GPIO4/GPIO3 无线灯。项目中的 `CONFIG_A040WQ` 使用 USB 灯作为 U-Boot 状态灯。
+
+`config_a040wq` 使用 256 MB DDR3、128 MB NAND 的 MT7621 NAND 配置。闪存沿用仓库统一的 NMBM 分区，固件偏移为 `0x3e0000`；原厂设备树的 `0x140000` kernel 分区不适用于此镜像。配套系统镜像必须采用相同布局。当前仅完成编译验证，按键和灯需实机确认。
+
+来源：[OpenWrt A-040W-Q 同硬件型号提交](https://git.openwrt.org/?p=openwrt/openwrt.git;a=commit;h=4f9b360f0b9a85202422ef07ee573eeca06d11ab)，[OpenWrt MSG1500 设备树](https://github.com/openwrt/openwrt/blob/main/target/linux/ramips/dts/mt7621_raisecom_msg1500-x-00.dts)。

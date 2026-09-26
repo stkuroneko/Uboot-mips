@@ -582,6 +582,13 @@ config E8820S
 	help
 	  Enable ZTE E8820S NAND board support with the project NMBM layout.
 
+config A040WQ
+	bool "Enable Nokia A-040W-Q"
+	depends on BOARD_MT7621_NAND_RFB && ASUS_PRODUCT
+	default n
+	help
+	  Enable Nokia A-040W-Q NAND board support with the project NMBM layout.
+
 config RTAX54
 	bool "Enable RTAX54"
 	default n
