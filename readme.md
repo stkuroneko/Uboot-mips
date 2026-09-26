@@ -55,7 +55,7 @@ make CROSS_COMPILE=/path/to/toolchain/bin/mipsel-linux- -j8
 
 仓库的 [GitHub Actions 工作流](.github/workflows/build.yml) 在 `master` 分支推送、面向 `master` 的 Pull Request，以及手动启动时编译上表全部机型。每个机型独立构建并上传一个名为 `u-boot-mt7621-机型名` 的 Artifact，内含 `u-boot-mt7621.bin`、构建生成的 `config` 和 `SHA256SUMS`。Artifact 保留 14 天。
 
-启用方法：将工作流提交并推送至 GitHub 的默认分支；在仓库 **Actions** 页面确认 Actions 已启用。推送到 `master` 会自动开始编译；手动编译可进入 **Actions → Build MT7621 U-Boot → Run workflow**。运行结束后，在对应运行页面的 **Artifacts** 下载所需机型的镜像。工作流使用 Ubuntu 22.04，并安装发行版的 MIPS 小端交叉编译器；本地 `Makefile` 默认使用的 `/opt/buildroot-gcc492_mips_glibc` 工具链不会出现在 GitHub 托管运行器上。
+启用方法：将工作流提交并推送至 GitHub 的默认分支；在仓库 **Actions** 页面确认 Actions 已启用。推送到 `master` 会自动开始编译；手动编译可进入 **Actions → Build MT7621 U-Boot → Run workflow**。运行结束后，在对应运行页面的 **Artifacts** 下载所需机型的镜像。工作流使用 Ubuntu 22.04，校验并解压仓库中 `toolchains/` 的 Buildroot MIPS 小端工具链，随后用它编译全部机型；GitHub 运行器无需另行下载交叉编译器。
 
 自动编译只验证源码可以生成镜像。刷写前仍须核对机型、NAND 布局和配套系统固件。
 
