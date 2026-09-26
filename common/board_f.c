@@ -82,6 +82,8 @@ const char *model =
 	"G-AX1800";
 #elif defined(CONFIG_HIWIFI4)
 	"HiWiFi 4 (HC5962)";
+#elif defined(CONFIG_E8820S)
+	"ZTE-E8820S";
 #elif defined(CONFIG_4GAX56)
 	"4G-AX56";
 #elif defined(CONFIG_RTAX54)
@@ -120,6 +122,8 @@ const char *blver =
 #elif defined(CONFIG_GAX1800)
 	"1001";
 #elif defined(CONFIG_HIWIFI4)
+	"1000";
+#elif defined(CONFIG_E8820S)
 	"1000";
 #elif defined(CONFIG_4GAX56)
 	"1003";

@@ -177,6 +177,12 @@
 #define PWR_LED                 6
 #endif
 
+#if defined(CONFIG_E8820S)
+#define WPS_BTN                 8
+#define RST_BTN                 18 /* Active low; verify on hardware */
+#define PWR_LED                 16 /* Active low */
+#endif
+
 #ifdef CONFIG_4GAX56
 #define WPS_BTN                 4
 #define RST_BTN                 8

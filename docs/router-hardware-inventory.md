@@ -1,6 +1,6 @@
 # 仓库涉及机型硬件配置汇总
 
-> 更新时间：2026-09-19
+> 更新时间：2026-09-25
 >
 > 本文根据本仓库的提交记录、配置文件和公开资料整理。公开资料之间可能存在地区版、批次版差异；`待确认` 表示尚未找到足够可靠的公开来源，不能用于直接选择刷机镜像或修改 DDR/NAND 参数。
 
@@ -161,3 +161,29 @@
 - Git 提交：`添加G-AX1800`、`添加ZTT RX6000`、`添加小米R3P`、`添加网件R6800`、`添加RM2100`、`添加小娱C3nand版`、`添加CMCCA9`
 
 HiWiFi 4 已加入 `CONFIG_HIWIFI4` 和 `config_hiwifi4` 构建配置。该适配按项目约定使用统一的 NMBM 分区布局和 failsafe 文件类型，不兼容 HC5962 原厂分区表；首次写入前必须完整备份原厂 NAND、Factory 与 bdinfo。
+
+
+## ZTE E8820S 构建配置
+
+新增 `CONFIG_E8820S` 和 `config_e8820s`，适用于 MT7621 NAND 版 E8820S。
+CPU 880 MHz，DDR3 采用与 `config_rtax53u` 相同的 256 MB、1200 MHz 初始化参数。
+
+- 电源灯：GPIO16，低电平点亮；WPS：GPIO8，低电平触发。
+- 复位键：GPIO18，按用户选择采用低电平触发，按住复位键上电进入网页救援。
+  本地 ImmortalWrt 和 Padavan 均定义为低电平，LEDE 定义为高电平，仍需实机验证。
+- 闪存相关配置全部沿用 RT-AX53U，包括 NAND 驱动、NMBM、环境变量、Factory、固件偏移和升级路径；不采用 E8820S 原厂分区或原厂 MAC 偏移。
+- 项目分区：`896k(u-boot),1024k(u-boot-env),1024k(factory),1024k(factory2),-(firmware)`，固件起始地址 `0x3e0000`。
+- 网页救援沿用项目现有实现，地址 `192.168.1.1`。此镜像要求配套的 RT-AX53U 风格闪存布局，不能按 E8820S 原厂分区直接使用。
+
+在仓库目录构建：
+
+```sh
+cp config_e8820s .config
+make olddefconfig
+make -j8 spl/u-boot-spl
+make -j8
+```
+
+输出为 `u-boot-mt7621.bin`。首次干净构建显式生成 SPL，以满足本仓库镜像打包依赖。
+GPIO 参考：[LEDE E8820S 设备树](https://github.com/coolsnowwolf/lede/blob/master/target/linux/ramips/dts/mt7621_zte_e8820s.dts)，并与本地 ImmortalWrt、Padavan 的 E8820S 定义交叉核对。
+编译通过不代表硬件验证；DDR 初始化、按键、灯和网络救援仍需实机测试。

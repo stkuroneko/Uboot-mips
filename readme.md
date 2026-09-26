@@ -1,0 +1,88 @@
+# MT7621 U-Boot
+
+基于 U-Boot 2018.09 的 MediaTek MT7621 路由器引导程序，包含 NAND/NMBM、机型 GPIO 配置和网页救援功能。上游通用说明见 [README](README)。
+
+## 机型配置
+
+仓库根目录提供以下构建配置。配置文件存在不代表所有机型均已完成实机验证。
+
+| 配置文件 | 机型 |
+| --- | --- |
+| `config_rtax53u` | ASUS RT-AX53U |
+| `config_rtax54` | ASUS RT-AX54 |
+| `config_xd4s` | ASUS ZenWiFi XD4S |
+| `config_4gax56` | ASUS 4G-AX56 |
+| `config_r3p` | 小米 R3P |
+| `config_rm2100` | Redmi AC2100 / RM2100 |
+| `config_hiwifi4` | 极路由 4 增强版 / HC5962 / B70 |
+| `config_e8820s` | ZTE E8820S，使用 RT-AX53U 闪存布局 |
+
+其他机型选项见根目录 `Kconfig`，硬件资料与适配说明见 [机型硬件配置汇总](docs/router-hardware-inventory.md)。
+
+## 编译
+
+使用 Linux 构建环境，需要主机 C/C++ 编译工具、GNU Make、Python 2.7（本版本镜像打包工具使用）、LZMA 工具和 MIPS 小端交叉工具链。使用 `menuconfig` 时还需要 ncurses 开发库。
+
+当前 `Makefile` 默认交叉编译器为：
+
+```text
+/opt/buildroot-gcc492_mips_glibc/usr/bin/mipsel-linux-gcc
+```
+
+以 E8820S 为例，在仓库根目录执行：
+
+```sh
+cp config_e8820s .config
+make olddefconfig
+make -j8 spl/u-boot-spl
+make -j8
+```
+
+先构建 SPL，以满足本仓库干净构建时的 NAND 镜像打包依赖。其他机型将第一条命令中的配置文件替换为对应文件即可；切换机型前可运行 `make clean` 清理旧产物。
+
+如需指定其他工具链，所有 `make` 命令均传入相同的 `CROSS_COMPILE`，例如：
+
+```sh
+make CROSS_COMPILE=/path/to/toolchain/bin/mipsel-linux- olddefconfig
+make CROSS_COMPILE=/path/to/toolchain/bin/mipsel-linux- -j8 spl/u-boot-spl
+make CROSS_COMPILE=/path/to/toolchain/bin/mipsel-linux- -j8
+```
+
+最终打包镜像为根目录下的 `u-boot-mt7621.bin`。
+
+## E8820S 适配约定
+
+- CPU：MT7621，880 MHz；DDR3 使用与 RT-AX53U 配置相同的 256 MB、1200 MHz 初始化参数。
+- 复位键：GPIO18，低电平触发；WPS：GPIO8，低电平触发。
+- 电源灯：GPIO16，低电平点亮。
+- 闪存相关配置全部与 RT-AX53U 一致，包括 NAND 驱动、NMBM、环境变量、Factory、固件偏移和升级流程，不使用 E8820S 原厂闪存布局。
+
+采用的项目分区布局：
+
+| 分区 | 起始偏移 | 大小 |
+| --- | --- | --- |
+| `u-boot` | `0x000000` | 896 KiB |
+| `u-boot-env` | `0x0e0000` | 1024 KiB |
+| `factory` | `0x1e0000` | 1024 KiB |
+| `factory2` | `0x2e0000` | 1024 KiB |
+| `firmware` | `0x3e0000` | 剩余可用空间 |
+
+上表为 `nmbm0` 分区布局；U-Boot 自身的环境存储参数沿用 RT-AX53U 的 `CONFIG_ENV_OFFSET=0x80000`、`CONFIG_ENV_SIZE=0x20000`，与表中的 `u-boot-env` 分区不是同一概念。
+
+配套固件及 Factory 数据必须适配上述布局，不能将该镜像视为 E8820S 原厂分区的直接替代品。
+
+## 网页救援
+
+`config_e8820s` 和 `config_hiwifi4` 已启用网页救援，其他配置可通过 `make menuconfig` 启用 `WEBUI_FAILSAFE`。
+
+1. 电脑通过网线连接路由器 LAN 口，并设置为 `192.168.1.x/24` 网段内的可用地址，例如 `192.168.1.2`。
+2. 按住复位键上电，进入网页救援；也可在串口 U-Boot 命令行执行 `httpd`。
+3. 浏览器访问 `http://192.168.1.1`，按页面选择对应文件类型并上传与项目布局匹配的镜像。
+
+串口默认参数为 115200 波特率。网页救援包含固件、Bootloader 和 Factory 写入入口，文件类型应与目标分区对应。
+
+## 验证状态
+
+E8820S 已完成交叉编译和镜像打包验证，并核对闪存、DDR 参数与 RT-AX53U 配置一致；尚未完成实机验证。
+
+复位键极性在不同开源设备树中存在差异，目前按低电平实现。DDR 初始化、复位键、指示灯、以太网和网页救援仍需实机确认。
